@@ -76,8 +76,10 @@ func (s *Stdoutput) Banner() {
 	}
 
 	if len(s.config.Headers) > 0 {
-		// Show header count summary
-		options["Headers"] = fmt.Sprintf("%d custom headers", len(s.config.Headers))
+		// If request file is used, headers will be shown individually below
+		if s.config.RequestFile == "" {
+			options["Headers"] = fmt.Sprintf("%d custom headers", len(s.config.Headers))
+		}
 	}
 	if len(s.config.Data) > 0 {
 		options["Data"] = s.config.Data
@@ -133,6 +135,13 @@ func (s *Stdoutput) Banner() {
 	}
 
 	s.Formatter.Banner(options)
+
+	// Display individual headers when request file is used
+	if s.config.RequestFile != "" && len(s.config.Headers) > 0 {
+		for headerName, headerValue := range s.config.Headers {
+			fmt.Printf(" :: Header           : %s: %s\n", headerName, headerValue)
+		}
+	}
 }
 
 func (s *Stdoutput) Reset() {
