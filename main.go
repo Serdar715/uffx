@@ -111,7 +111,8 @@ func ParseFlags(opts *ffuf.ConfigOptions) *ffuf.ConfigOptions {
 	// Removed duplicate discover-backup flag definition to avoid runtime panic
 	// flag.BoolVar(&opts.General.DiscoverBackup, "discover-backup", opts.General.DiscoverBackup, "Discover backup files (.bak, .old, .zip, .tar.gz, etc.) for found files")
 	flag.BoolVar(&opts.General.ShowRedirect, "sr", opts.General.ShowRedirect, "Show redirect location for 301/302 responses (default: true)")
-	flag.BoolVar(&opts.General.OutputLinks, "ol", opts.General.OutputLinks, "Output only URLs/links from results")
+	// Note: -ol flag is boolean; to save links to file use: -ol -o filename.txt
+	flag.BoolVar(&opts.General.OutputLinks, "ol", opts.General.OutputLinks, "Output only URLs/links from results (use with -o to save to file)")
 	flag.BoolVar(&opts.General.Smart404, "smart-404", opts.General.Smart404, "Smart 404 detection (heuristic filtering)")
 	flag.IntVar(&opts.General.MaxTime, "maxtime", opts.General.MaxTime, "Maximum running time in seconds for entire process.")
 	flag.IntVar(&opts.General.MaxTimeJob, "maxtime-job", opts.General.MaxTimeJob, "Maximum running time in seconds per job.")
