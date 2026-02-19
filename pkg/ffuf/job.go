@@ -196,9 +196,10 @@ func (j *Job) initializeJob() {
 	}
 
 	basereq := BaseRequest(j.Config)
+	j.startTimeJob = time.Now()
 
-	// Calibrate detector if needed
-	if j.Config.Smart404 {
+	// Calibrate detector if needed - Disable for SingleShot jobs
+	if j.Config.Smart404 && !j.SingleShot {
 		err := j.Detector.Calibrate(j.Runner, &basereq)
 		if err != nil {
 			j.Output.Error(fmt.Sprintf("Calibration failed: %s", err))
@@ -275,6 +276,14 @@ func NewJobFromQueue(q QueueJob, parent *Job) (*Job, error) {
 	// Clone config
 	newConf := *parent.Config
 	newConf.Url = q.Url
+
+	// If it's a SingleShot job, we force a static single input provider
+	if q.SingleShot {
+		newConf.InputProviders = []InputProviderConfig{{Name: "static", Keyword: "FUZZ", Value: ""}}
+	}
+
+	// Clone MatcherManager
+	newConf.MatcherManager = parent.Config.MatcherManager.Clone()
 
 	// Create new job
 	newJob := NewJob(&newConf)
@@ -442,7 +451,7 @@ func (j *Job) processSingleShotJob(wg *sync.WaitGroup, threadlimiter chan bool) 
 		defer func() { <-threadlimiter }()
 		defer wg.Done()
 		threadStart := time.Now()
-		j.runTask(make(map[string][]byte), 0, false)
+		j.runTask(j.Input.Value(), 0, false)
 		j.sleepIfNeeded()
 		threadEnd := time.Now()
 		j.Rate.Tick(threadStart, threadEnd)
