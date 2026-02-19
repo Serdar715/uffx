@@ -1,0 +1,43 @@
+# Binaries
+uff
+uff.exe
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Output
+results/
+*.json
+*.html
+*.csv
+*.md
+!README.md
+!CHANGELOG.md
+!CONTRIBUTORS.md
+
+# Logs
+*.log
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go
+vendor/
+go.work
+
+test_output.txt
+output.txt
+passwords.txt
+req.txt
+results.json
+
+# Tests
+*_test.go
