@@ -57,7 +57,8 @@ func (f *StandardFormatter) Banner(options map[string]string) {
 
 func (f *StandardFormatter) Result(res ffuf.Result) {
 	switch {
-	case f.config.OutputLinks:
+	case f.config.OutputLinksOnly:
+		// -ol flag used: output only links
 		fmt.Println(res.Url)
 	case f.config.Json:
 		f.resultJson(res)

@@ -55,6 +55,8 @@ func (i *MainInputProvider) AddProvider(provider ffuf.InputProviderConfig) error
 	} else if provider.Name == "range" {
 		newrange, _ := NewRangeInput(provider.Keyword, provider.Value, i.Config)
 		i.Providers = append(i.Providers, newrange)
+	} else if provider.Name == "static" {
+		i.Providers = append(i.Providers, NewSingleInput())
 	} else {
 		// Default to wordlist
 		newwl, err := NewWordlistInput(provider.Keyword, provider.Value, i.Config)

@@ -351,13 +351,14 @@ func (s *Stdoutput) SaveFile(filename, format string) error {
 
 func (s *Stdoutput) Finalize() error {
 	var err error
-	// Handle -ol flag: save only links to output file
-	if s.config.OutputLinks && s.config.OutputFile != "" {
-		err = s.saveLinksToFile(s.config.OutputFile)
+	// -ol flag: save links to file
+	if len(s.config.OutputLinksFile) > 0 {
+		err = s.saveLinksToFile(s.config.OutputLinksFile)
 		if err != nil {
 			s.Error(err.Error())
 		}
 	} else if s.config.OutputFile != "" {
+		// Normal output save
 		err = s.SaveFile(s.config.OutputFile, s.config.OutputFormat)
 		if err != nil {
 			s.Error(err.Error())
@@ -511,6 +512,7 @@ func (s *Stdoutput) Result(resp ffuf.Response) {
 	}
 
 	s.Formatter.Result(sResult)
+	s.linesPrinted = 0
 
 	// Redraw footer
 	s.forceRedrawFooter()

@@ -14,38 +14,37 @@ import (
 
 var ()
 
-// Job ties together Config, Runner, Input and Output
 type Job struct {
-	AuditLogger  AuditLogger
-	Config       *Config
-	ErrorMutex   sync.Mutex
-	Input        InputProvider
-	Runner       RunnerProvider
-	ReplayRunner RunnerProvider
-	Scraper      Scraper
-	Output       OutputProvider
-	Jobhash      string
-	running      atomic.Bool
-	runningJob   atomic.Bool
-	Paused       bool
-	Error        string
-	Rate         *RateThrottle
-	Stats        *JobStats
-	startTime    time.Time
-	startTimeJob time.Time
-	queuejobs    []QueueJob
-	queuepos     int
-	skipQueue    bool
-	currentDepth int
-	calibMutex   sync.Mutex
-	pauseWg      sync.WaitGroup
-	// CalibrationWords removed, now in Detector
+	AuditLogger       AuditLogger
+	Config            *Config
+	ErrorMutex        sync.Mutex
+	Input             InputProvider
+	Runner            RunnerProvider
+	ReplayRunner      RunnerProvider
+	Scraper           Scraper
+	Output            OutputProvider
+	Jobhash           string
+	running           atomic.Bool
+	runningJob        atomic.Bool
+	Paused            bool
+	Error             string
+	Rate              *RateThrottle
+	Stats             *JobStats
+	startTime         time.Time
+	startTimeJob      time.Time
+	queuejobs         []QueueJob
+	queuepos          int
+	skipQueue         bool
+	currentDepth      int
+	calibMutex        sync.Mutex
+	pauseWg           sync.WaitGroup
 	VisitedURLs       map[string]bool
 	VisitedMutex      sync.Mutex
 	QueueMutex        sync.Mutex
 	RecursionStrategy RecursionStrategy
 	Detector          FalsePositiveDetector
 	InputFactory      InputProviderFactory
+	SingleShot        bool
 }
 
 func NewJob(conf *Config) *Job {
@@ -73,6 +72,7 @@ func NewJob(conf *Config) *Job {
 	} else {
 		j.Detector = &NoopDetector{}
 	}
+	j.SingleShot = false
 	return &j
 }
 
@@ -166,7 +166,7 @@ func (j *Job) Start() {
 	j.running.Store(true)
 	j.runningJob.Store(true)
 
-	if !j.Config.Quiet && j.currentDepth == 0 {
+	if !j.Config.Quiet && j.currentDepth == 0 && !j.SingleShot {
 		j.Output.Banner()
 	}
 
@@ -214,7 +214,7 @@ func (j *Job) initializeJob() {
 		j.Stats.Total = j.Input.Total() * len(reqs)
 	} else {
 		// Add the default job to job queue
-		j.queuejobs = append(j.queuejobs, QueueJob{Url: j.Config.Url, depth: 0, req: BaseRequest(j.Config), SingleShot: false})
+		j.queuejobs = append(j.queuejobs, QueueJob{Url: j.Config.Url, depth: 0, req: BaseRequest(j.Config), SingleShot: j.SingleShot})
 		j.Stats.Total = j.Input.Total()
 	}
 }
@@ -300,8 +300,9 @@ func NewJobFromQueue(q QueueJob, parent *Job) (*Job, error) {
 	newJob.ReplayRunner = parent.ReplayRunner
 	newJob.AuditLogger = parent.AuditLogger
 
-	// Set depth
+	// Set depth and singleshot
 	newJob.currentDepth = q.depth
+	newJob.SingleShot = q.SingleShot
 
 	// Setup stats?
 	// NewJob creates fresh stats.
@@ -389,14 +390,20 @@ func (j *Job) Resume() {
 func (j *Job) startExecution() {
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go j.runBackgroundTasks(&wg)
+
+	if !j.SingleShot {
+		go j.runBackgroundTasks(&wg)
+	} else {
+		// Just for wg consistency if we don't spawn background tasks
+		wg.Done()
+	}
 
 	isSingleShot := false
 	if j.queuepos > 0 && j.queuepos <= len(j.queuejobs) {
 		isSingleShot = j.queuejobs[j.queuepos-1].SingleShot
 	}
 
-	if j.queuepos > 1 && !isSingleShot {
+	if (j.queuepos > 1 || j.currentDepth > 0) && !isSingleShot && !j.SingleShot {
 		if j.Config.InputMode == "sniper" {
 			j.Output.Info(fmt.Sprintf("Starting queued sniper job (%d of %d) on target: %s", j.queuepos, len(j.queuejobs), j.Config.Url))
 		} else {
@@ -536,6 +543,9 @@ func (j *Job) runBackgroundTasks(wg *sync.WaitGroup) {
 }
 
 func (j *Job) updateProgress() {
+	if j.SingleShot {
+		return
+	}
 	prog := Progress{
 		StartedAt:     j.startTimeJob,
 		ReqCount:      j.Stats.Counter,

@@ -17,9 +17,7 @@ const (
 
 // validStatusCodes defines which responses trigger backup scanning
 var validStatusCodes = map[int64]bool{
-	200: true, 201: true, 204: true,
-	301: true, 302: true, 307: true, 308: true,
-	403: true,
+	200: true,
 }
 
 // BackupHook discovers backup files for found resources

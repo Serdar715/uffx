@@ -79,7 +79,8 @@ type GeneralOptions struct {
 	MaxTimeJob                int      `json:"maxtime_job"`
 	Noninteractive            bool     `json:"noninteractive"`
 	Quiet                     bool     `json:"quiet"`
-	OutputLinks               bool     `json:"output_links"`
+	OutputLinksOnly           bool     `json:"output_links_only"`
+	OutputLinksFile           string   `json:"output_links_file"`
 	Rate                      int      `json:"rate"`
 	Resume                    string   `json:"resume"`
 	ScraperFile               string   `json:"scraperfile"`
@@ -187,7 +188,8 @@ func NewConfigOptions() *ConfigOptions {
 	c.General.MaxTimeJob = 0
 	c.General.Noninteractive = false
 	c.General.Quiet = false
-	c.General.OutputLinks = false
+	c.General.OutputLinksOnly = false
+	c.General.OutputLinksFile = ""
 	c.General.Rate = 0
 	c.General.Searchhash = ""
 	c.General.ScraperFile = ""
@@ -425,7 +427,16 @@ func ConfigFromOptions(parseOpts *ConfigOptions, ctx context.Context, cancel con
 	}
 
 	if len(conf.InputProviders) == 0 && len(parseOpts.Input.InputRanges) == 0 && parseOpts.Input.Range == "" && !parseOpts.Input.AutoFuzz {
-		errs.Add(fmt.Errorf("Either -w, --input-cmd or -range flag is required"))
+		if !parseOpts.General.DiscoverBackup {
+			errs.Add(fmt.Errorf("Either -w, --input-cmd or -range flag is required"))
+		} else {
+			// If only -db is specified, use static input
+			conf.InputProviders = append(conf.InputProviders, InputProviderConfig{
+				Name:    "static",
+				Value:   "",
+				Keyword: "FUZZ",
+			})
+		}
 	}
 
 	// Handle Range Input — support multiple -range flags
@@ -639,7 +650,8 @@ func ConfigFromOptions(parseOpts *ConfigOptions, ctx context.Context, cancel con
 	conf.OutputSkipEmptyFile = parseOpts.Output.OutputSkipEmptyFile
 	conf.IgnoreBody = parseOpts.HTTP.IgnoreBody
 	conf.Quiet = parseOpts.General.Quiet
-	conf.OutputLinks = parseOpts.General.OutputLinks
+	conf.OutputLinksOnly = parseOpts.General.OutputLinksOnly
+	conf.OutputLinksFile = parseOpts.General.OutputLinksFile
 	conf.ScraperFile = parseOpts.General.ScraperFile
 	conf.Scrapers = parseOpts.General.Scrapers
 	conf.StopOn403 = parseOpts.General.StopOn403

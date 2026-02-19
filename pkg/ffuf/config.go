@@ -70,7 +70,8 @@ type Config struct {
 	ProgressFrequency         int                   `json:"-"`
 	ProxyURL                  string                `json:"proxyurl"`
 	Quiet                     bool                  `json:"quiet"`
-	OutputLinks               bool                  `json:"output_links"`
+	OutputLinksOnly           bool                  `json:"output_links_only"`
+	OutputLinksFile           string                `json:"output_links_file"`
 	Rate                      int64                 `json:"rate"`
 	Raw                       bool                  `json:"raw"`
 	Recursion                 bool                  `json:"recursion"`
