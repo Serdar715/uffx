@@ -68,6 +68,7 @@ type GeneralOptions struct {
 	DiscoverBackup            bool     `json:"discover_backup"`
 	BackupPatterns            string   `json:"backup_patterns"`
 	BackupLevel               int      `json:"backup_level"`
+	BackupStatusCodes         string   `json:"backup_status_codes"`
 	DNS                       bool     `json:"dns"`
 	DoNotSendContentLength    bool     `json:"do_not_send_content_length"`
 	LFI                       bool     `json:"lfi"`
@@ -98,6 +99,7 @@ type GeneralOptions struct {
 	TargetFile                string   `json:"target_file"`
 	Batch                     bool     `json:"batch"`
 	Verbose                   bool     `json:"verbose"`
+	NoBanner                  bool     `json:"no_banner"`
 }
 
 type InputOptions struct {
@@ -179,6 +181,7 @@ func NewConfigOptions() *ConfigOptions {
 	c.General.Delay = ""
 	c.General.DiscoverBackup = false
 	c.General.BackupLevel = 2
+	c.General.BackupStatusCodes = "200"
 	c.General.BackupPatterns = ""
 	c.General.DoNotSendContentLength = false
 	c.General.MethodAsRawRequest = false
@@ -254,6 +257,47 @@ func NewConfigOptions() *ConfigOptions {
 	c.Output.OutputFormat = "json"
 	c.Output.OutputSkipEmptyFile = false
 	return c
+}
+
+// parseBackupStatusCodes parses comma-separated status codes from a string
+// Returns a slice of int64 status codes, always includes 200 as default
+func parseBackupStatusCodes(input string) ([]int64, error) {
+	codes := make([]int64, 0)
+
+	if input == "" || input == "200" {
+		// Default: only 200
+		return []int64{200}, nil
+	}
+
+	// Parse comma-separated codes
+	for _, part := range strings.Split(input, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		code, err := strconv.ParseInt(part, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid status code '%s': %w", part, err)
+		}
+		if code < 100 || code > 599 {
+			return nil, fmt.Errorf("invalid HTTP status code: %d (must be 100-599)", code)
+		}
+		codes = append(codes, code)
+	}
+
+	// Always include 200 as default
+	hasDefault := false
+	for _, code := range codes {
+		if code == 200 {
+			hasDefault = true
+			break
+		}
+	}
+	if !hasDefault {
+		codes = append(codes, 200)
+	}
+
+	return codes, nil
 }
 
 // ConfigFromOptions parses the values in ConfigOptions struct, ensures that the values are sane,
@@ -680,11 +724,20 @@ func ConfigFromOptions(parseOpts *ConfigOptions, ctx context.Context, cancel con
 	conf.MaxTimeJob = parseOpts.General.MaxTimeJob
 	conf.Noninteractive = parseOpts.General.Noninteractive
 	conf.Verbose = parseOpts.General.Verbose
+	conf.NoBanner = parseOpts.General.NoBanner
 	conf.Json = parseOpts.General.Json
 	conf.Http2 = parseOpts.HTTP.Http2
 	conf.InsecureSSL = parseOpts.HTTP.InsecureSSL
 	conf.DiscoverBackup = parseOpts.General.DiscoverBackup
 	conf.BackupLevel = parseOpts.General.BackupLevel
+
+	// Parse backup status codes
+	statusCodes, err := parseBackupStatusCodes(parseOpts.General.BackupStatusCodes)
+	if err != nil {
+		return nil, fmt.Errorf("backup status codes: %w", err)
+	}
+	conf.BackupStatusCodes = statusCodes
+
 	conf.Smart404 = parseOpts.General.Smart404
 	conf.LFI = parseOpts.General.LFI
 	// AutoCalibration implies Smart404 (User request)

@@ -27,6 +27,7 @@ type Config struct {
 	DirSearchCompat           bool                  `json:"dirsearch_compatibility"`
 	DiscoverBackup            bool                  `json:"discover_backup"`
 	BackupLevel               int                   `json:"backup_level"`
+	BackupStatusCodes         []int64               `json:"backup_status_codes"`
 	DNSDiscovery              bool                  `json:"dns_discovery"`
 	Batch                     bool                  `json:"batch"`
 	TargetFile                string                `json:"target_file"`
@@ -102,6 +103,7 @@ type Config struct {
 	Url                       string                `json:"url"`
 	Opaque                    string                `json:"opaque"`
 	Verbose                   bool                  `json:"verbose"`
+	NoBanner                  bool                  `json:"no_banner"`
 	Wordlists                 []string              `json:"wordlists"`
 	Http2                     bool                  `json:"http2"`
 	ClientCert                string                `json:"client-cert"`
@@ -136,6 +138,7 @@ func NewConfig(ctx context.Context, cancel context.CancelFunc) Config {
 	conf.DirSearchCompat = false
 	conf.DiscoverBackup = false
 	conf.BackupLevel = 2
+	conf.BackupStatusCodes = []int64{200}
 	conf.DNSDiscovery = false
 	conf.DoNotSendContentLength = false
 	conf.AdvancedRange = ""
@@ -193,6 +196,7 @@ func NewConfig(ctx context.Context, cancel context.CancelFunc) Config {
 	conf.Url = ""
 	conf.Opaque = ""
 	conf.Verbose = false
+	conf.NoBanner = false
 	conf.Wordlists = []string{}
 	conf.Http2 = false
 	conf.InsecureSSL = true

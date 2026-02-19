@@ -61,7 +61,7 @@ func Usage() {
 		Description:   "",
 		Flags:         make([]UsageFlag, 0),
 		Hidden:        false,
-		ExpectedFlags: []string{"ac", "acc", "ack", "ach", "acs", "c", "db", "discover-backup", "collect-backups", "backup-level", "diff", "no-content-length", "method-as-raw-request", "config", "json", "maxtime", "maxtime-job", "noninteractive", "p", "rate", "scraperfile", "scrapers", "search", "s", "sa", "se", "sf", "sr", "smart-404", "t", "v", "V", "lfi", "autotune", "batch", "l", "random-agent", "auto-file", "resume"},
+		ExpectedFlags: []string{"ac", "acc", "ack", "ach", "acs", "c", "db", "discover-backup", "collect-backups", "backup-level", "diff", "no-content-length", "method-as-raw-request", "config", "json", "maxtime", "maxtime-job", "noninteractive", "p", "rate", "scraperfile", "scrapers", "search", "s", "sa", "se", "sf", "sr", "smart-404", "t", "v", "V", "lfi", "autotune", "batch", "l", "random-agent", "auto-file", "resume", "nb"},
 	}
 	u_compat := UsageSection{
 		Name:          "COMPATIBILITY OPTIONS",

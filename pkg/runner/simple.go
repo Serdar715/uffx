@@ -114,7 +114,13 @@ func (runner *SimpleRunner) registerHooks(conf *ffuf.Config) {
 		runner.AddPostHook(features.NewLFIHook())
 	}
 	if conf.DiscoverBackup {
-		runner.AddPostHook(features.NewBackupHook(conf.BackupLevel))
+		hook, err := features.NewBackupHookWithStatusCodesList(conf.BackupLevel, conf.BackupStatusCodes)
+		if err != nil {
+			// Log warning but continue (backup discovery is optional)
+			slog.Warn("Failed to initialize backup hook", "error", err)
+		} else {
+			runner.AddPostHook(hook)
+		}
 	}
 	if conf.Spider {
 		runner.AddPostHook(features.NewSpiderHook())

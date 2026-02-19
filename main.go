@@ -86,6 +86,7 @@ func ParseFlags(opts *ffuf.ConfigOptions) *ffuf.ConfigOptions {
 	flag.BoolVar(&opts.General.Json, "json", opts.General.Json, "JSON output, printing newline-delimited JSON records")
 	flag.BoolVar(&opts.General.Noninteractive, "noninteractive", opts.General.Noninteractive, "Disable the interactive console functionality")
 	flag.BoolVar(&opts.General.Quiet, "s", opts.General.Quiet, "Do not print additional information (silent mode)")
+	flag.BoolVar(&opts.General.NoBanner, "nb", opts.General.NoBanner, "Do not display banner")
 	flag.BoolVar(&opts.General.ShowVersion, "V", opts.General.ShowVersion, "Show version information.")
 	flag.BoolVar(&opts.General.StopOn403, "sf", opts.General.StopOn403, "Stop when > 95% of responses return 403 Forbidden")
 	flag.BoolVar(&opts.General.StopOnAll, "sa", opts.General.StopOnAll, "Stop on all error cases. Implies -sf and -se.")
@@ -105,9 +106,10 @@ func ParseFlags(opts *ffuf.ConfigOptions) *ffuf.ConfigOptions {
 	flag.BoolVar(&opts.General.RandomAgent, "random-agent", opts.General.RandomAgent, "Choose a random User-Agent for each request")
 	flag.BoolVar(&opts.Input.Spider, "spider", opts.Input.Spider, "Dynamic link extraction and crawling")
 	flag.BoolVar(&opts.HTTP.DNSDiscovery, "dns", opts.HTTP.DNSDiscovery, "Virtual host discovery mode")
-	flag.BoolVar(&opts.General.DiscoverBackup, "db", opts.General.DiscoverBackup, "Discover backup files (.bak, .old, .zip, .tar.gz, etc.) for found files")
-	flag.BoolVar(&opts.General.DiscoverBackup, "collect-backups", opts.General.DiscoverBackup, "Discover backup files (alias of -db)")
+	flag.BoolVar(&opts.General.DiscoverBackup, "db", false, "Discover backup files (.bak, .old, .zip, .tar.gz, etc.) for found files [CAUTION: causes exponential request growth on large sites]")
+	flag.BoolVar(&opts.General.DiscoverBackup, "collect-backups", false, "Discover backup files (alias of -db)")
 	flag.IntVar(&opts.General.BackupLevel, "backup-level", opts.General.BackupLevel, "Backup discovery level (1: Basic, 2: Common, 3: Deep)")
+	flag.StringVar(&opts.General.BackupStatusCodes, "db-status", "200", "HTTP status codes to check for backups (comma-separated, e.g., 200,403,301). Default 200 is always included.")
 	// Removed duplicate discover-backup flag definition to avoid runtime panic
 	// flag.BoolVar(&opts.General.DiscoverBackup, "discover-backup", opts.General.DiscoverBackup, "Discover backup files (.bak, .old, .zip, .tar.gz, etc.) for found files")
 	flag.BoolVar(&opts.General.ShowRedirect, "sr", opts.General.ShowRedirect, "Show redirect location for 301/302 responses (default: true)")
@@ -362,6 +364,8 @@ func main() {
 
 	// Handle Batch & AutoFuzz Modes
 	if conf.Batch || conf.TargetFile != "" || conf.AutoFuzz {
+		// Automatically suppress banner in batch mode unless explicitly requested via -V or other output
+		conf.NoBanner = true
 		// Define the job runner function
 		jobRunner := func(jobConf *ffuf.Config) error {
 			return runFuzzingJob(jobConf)

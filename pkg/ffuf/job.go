@@ -166,7 +166,7 @@ func (j *Job) Start() {
 	j.running.Store(true)
 	j.runningJob.Store(true)
 
-	if !j.Config.Quiet && j.currentDepth == 0 && !j.SingleShot {
+	if !j.Config.Quiet && !j.Config.NoBanner && j.currentDepth == 0 && !j.SingleShot {
 		j.Output.Banner()
 	}
 
@@ -262,7 +262,12 @@ func (j *Job) runRootJob() {
 func (j *Job) spawnChildJob(jobToRun *QueueJob) {
 	child, err := NewJobFromQueue(*jobToRun, j)
 	if err != nil {
-		j.Output.Error(fmt.Sprintf("%s", err))
+		// Provide context-aware error messages
+		if jobToRun.SingleShot {
+			j.Output.Error(fmt.Sprintf("Backup check failed for %s: %s", jobToRun.Url, err))
+		} else {
+			j.Output.Error(fmt.Sprintf("Failed to spawn child job for %s: %s", jobToRun.Url, err))
+		}
 		return
 	}
 

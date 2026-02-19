@@ -80,7 +80,83 @@ uff -auto "http://target.com/vuln.php?id=1&page=intro&user=guest" -w wordlist.tx
 
 ---
 
-### 2. DNS Enumeration
+### 2. Batch Mode: Processing Multiple Targets
+
+#### 2a. From File (-l flag)
+Scan many targets from a file, each with the same payload dictionary.
+
+```bash
+# Scan 1000 URLs for /admin endpoint
+uff -l targets.txt -w wordlist.txt -u FUZZ/admin
+
+# Scan with auto-fuzz (detect parameters in each URL)
+uff -l targets.txt -w payloads.txt -auto -t 20 -timeout 5
+
+# Suppress banner (useful for batch operations)
+uff -l targets.txt -w wordlist.txt -u /FUZZ -nb
+```
+
+**Target file format (targets.txt):**
+```
+https://example.com
+https://test.org
+https://app.target.com/api
+```
+
+#### 2b. From Stdin (-batch flag)
+Pipe targets from other tools. Enables Unix-style chaining.
+
+```bash
+# From cat
+cat targets.txt | uff -batch -w wordlist.txt -u FUZZ/api
+
+# From gau (Get All URLs)
+gau example.com | uff -batch -w payloads.txt -auto
+
+# From subfinder
+subfinder -d example.com -o subs.txt
+cat subs.txt | uff -batch -w wordlist.txt -u /FUZZ/api -t 50
+
+# Custom script output
+./find_urls.sh | uff -batch -w fuzzing_list.txt -auto -lfi
+```
+
+**Key Options for Batch Mode:**
+- `-t N`: Number of concurrent threads (default: 50)
+- `-timeout N`: HTTP timeout per request in seconds (default: 10)
+- `-p 0.5` or `-p 0.5-2`: Add delay between requests (helps WAF evasion)
+- `-nb`: Suppress banner (clean output for logging/monitoring)
+- `-s`: Silent mode (minimum output)
+- `-matcher/-mc`: Match specific HTTP status codes
+
+---
+
+### 3. Auto-Fuzzing Parameters (-auto flag)
+Automatically detect and fuzz URL parameters without manual setup.
+
+```bash
+# Auto-detect GET parameters
+uff -auto -u "https://api.example.com/search?q=test&filter=active" -w payloads.txt
+
+# Auto-fuzz with batch file processing
+uff -l urls_with_params.txt -w payloads.txt -auto -t 30
+
+# Auto-fuzz from stdin
+echo "https://target.com/page?id=1&user=admin" | uff -batch -auto -w wordlist.txt
+
+# Combine with other features
+uff -auto -u "https://target.com?id=1&page=1" -w payloads.txt -autotune -lfi -db
+```
+
+**What -auto does:**
+- Parses query string parameters
+- Creates separate fuzzing jobs for each parameter
+- Maintains parameter context (other params stay intact)
+- Works with `-batch` for processing multiple URLs
+
+---
+
+### 4. DNS Enumeration
 Discover subdomains or check for DNS records before attacking.
 
 ```bash
@@ -90,7 +166,7 @@ uff -u "http://target.com" -w subdomains.txt -dns
 
 ---
 
-### 3. Advanced Range Input
+### 5. Advanced Range Input
 Generate inputs dynamically without massive wordlists.
 
 ```bash
@@ -106,20 +182,7 @@ uff -u "http://target.com/logs/FUZZ.log" -range 01-01-2023..31-12-2023
 
 ---
 
-### 4. Mass Scanning (Batch Mode)
-Pipe URLs from tools like `gau`, `waybackurls`, or `subfinder`.
-
-```bash
-# Scan a list of targets for 'admin' directory
-cat live_subdomains.txt | uff -batch -w wordlist.txt -u FUZZ/admin
-
-# Scan specific endpoints from a file
-uff -l targets_with_params.txt -w payloads.txt -auto
-```
-
----
-
-### 5. Smart LFI Detection
+### 6. Smart LFI Detection
 Enable the heuristic engine to find Local File Inclusion vulnerabilities with high confidence.
 
 ```bash
@@ -129,7 +192,7 @@ uff -u "https://target.com/image?load=FUZZ" -w lfi_payloads.txt -lfi
 
 ---
 
-### 6. WAF Evasion (Auto-Tune)
+### 7. WAF Evasion (Auto-Tune)
 Avoid getting IP-banned during aggressive scans.
 
 ```bash
@@ -139,7 +202,7 @@ uff -u https://target.com/FUZZ -w large_wordlist.txt -autotune
 
 ---
 
-### 7. Backup File Discovery
+### 8. Backup File Discovery
 Automatically finding backup files is crucial for exposing source code.
 
 ```bash
